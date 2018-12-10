@@ -1,0 +1,4 @@
+
+mysql_install_single/installation_of_single_mysql.sh
+*.cnf
+mysql_install_single/install_single.conf
