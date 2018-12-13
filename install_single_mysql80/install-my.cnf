@@ -1,0 +1,140 @@
+# line          :V1.9
+# mail          :gczheng@139.com
+# data          :2018-12-13
+# file_name     :my.cnf
+# update        :
+
+#### 注意     :建议参数根据实际情况作调整
+
+
+# ********* 以下重要参数必须修改核对 *********
+# 1.innodb_flush_log_at_trx_commit=1
+# 2.sync_binlog = 1
+# 3.innodb_strict_mode = OFF                          #关闭InnoDB严格检查模式
+# 4.innodb_flush_method = O_DIRECT
+# 5.lower_case_table_names = 1                        #设置区分大小写,1表示不区分大小写，0表示区分大小写
+# 6.character-set-server = utf8mb4
+# 7.sql_mode                                          #默认配置
+# 8.server-id =1                                      #修改成对应数值（1~4294967295），建议使用使用ip的最后两个网段组合（192.168.100.199，设置成100199）
+# 9.innodb_buffer_pool_size = 10G                     #纯mysql server 配置50%和 混合内存配置不低于10G~40%
+#13.slave-parallel                                    #从库开启并行复制，并行复制参数取消注释                  
+#11.innodb_data_file_path = ibdata1:1G:autoextend     #确认配置是否跟原来一样,之前已配置好请维持原样,如未配置请注释掉，新版本请取消注释
+#12.log_bin = ${MYSQL_DATADIR}/binlog                 
+                                         
+# ********************************************
+
+[client]
+port    = 3306
+socket  = ${MYSQL_DATADIR}/mysql.sock
+#=======================================================================
+# # MySQL客户端配置
+#=======================================================================
+[mysql]
+prompt="(\u@\h) \\R:\\m:\\s [\d]> "
+no-auto-rehash
+default-character-set = utf8mb4
+#=======================================================================
+# MySQL服务器全局配置
+#=======================================================================
+[mysqld]
+user = mysql
+port = 3306
+server-id = ${SERVER_ID}  #(mgr必要配置)
+tmpdir = ${MYSQL_DATADIR}
+datadir = ${MYSQL_DATADIR}
+socket  = ${MYSQL_DATADIR}/mysql.sock
+wait_timeout = 31536000
+#interactive_timeout = 600
+#sql_mode =               #sql_mode 配置为空值
+#skip_name_resolve = 1
+lower_case_table_names = 1
+character-set-server = utf8mb4
+log_timestamps = SYSTEM
+init_connect='SET NAMES utf8mb4'
+max_allowed_packet = 128M
+######################### 性能参数 ####################
+open_files_limit = 10240
+max_connections = 1000
+max_user_connections=999
+max_connect_errors = 100000
+table_open_cache = 1024
+thread_cache_size = 64
+max_heap_table_size = 32M
+###global cache ###
+tmp_table_size = 32M                    #内存临时表
+binlog_cache_size = 4M                  #二进制日志缓冲
+#******************session cache ******************#
+sort_buffer_size = 8M                   #排序缓冲
+join_buffer_size = 4M                   #表连接缓冲
+read_buffer_size = 8M                   #顺序读缓冲
+read_rnd_buffer_size = 8M               #随机读缓冲
+thread_stack = 256KB                    #线程的堆栈的大小
+######################### binlog设置 #####################
+binlog_format = ROW                     #(mgr必要配置)
+log_bin = ${MYSQL_DATADIR}/binlog       #(mgr必要配置)
+max_binlog_size = 1G
+binlog_expire_logs_seconds = 604800     #binlog保留7天，时间单位（秒）
+sync_binlog = 1                         #重要参数必须修改为1
+#binlog_checksum = NONE                 #禁用写入二进制日志的事件的校验值(mgr必要配置)
+######################### 复制设置 ########################
+log_slave_updates = 1                   #(mgr必要配置)
+#replicate-do-db = test
+#binlog-ignore-db = mysql
+### GTID 配置 ###
+gtid_mode=ON                            #(mgr必要配置)
+enforce-gtid-consistency=true           #(mgr必要配置)
+#****************** 开启并行复制（从库）******************
+slave-parallel-type=LOGICAL_CLOCK           #基于组提交的并行复制方式
+slave-parallel-workers= ${CPU_CORE_NUMS}    #并行的SQL线程数量（cpu核数）
+master-info_repository=TABLE                #master信息以表的形式保存(mgr必要配置)
+relay_log_info_repository=TABLE             #slave信息以表的形式保存(mgr必要配置)
+relay_log_recovery=ON                       #relay_log自我修复
+#****************** 开启组复制（从库）******************
+
+# transaction_write_set_extraction = XXHASH64                             #指示 server 必须为每个事务收集写集合,并使用 XXHASH64 哈希算法将其编码为散列
+# group_replication_group_name = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"   #给加入或创建的组命名，必须为"uuid"的格式
+# group_replication_start_on_boot = off                                   #配置插件在 server 启动时不自动启动组复制
+# group_replication_local_address = '192.168.222.171:24901'               #使用IP地址或本地主机名,端口24901用于接受来自组中其他成员的传入连接。
+# group_replication_group_seeds ='192.168.222.171:24901,192.168.222.172:24901,192.168.222.173:24901,192.168.222.174:24901' #MGR组成员的所有IP及端口
+# group_replication_bootstrap_group = off                                 #启动不自己加入组
+# group_replication_single_primary_mode=on                                #配置为多主模式配置为off
+# group_replication_enforce_update_everywhere_checks=false                #开启强制检查(单主模式必须将此选项设置为FALSE)
+
+######################### innodb ##########################
+default_storage_engine = InnoDB
+innodb_data_file_path = ibdata1:1G:autoextend
+innodb_buffer_pool_size = ${BUFFER_POOL_SIZE}  #系统内存50%
+innodb_open_files = 5120                        #调整innodb_open_files设置值，必须小于open_files_limit的设置值
+innodb_flush_log_at_trx_commit = 1              #线上服务器必须配置为1
+innodb_file_per_table = 1
+innodb_lock_wait_timeout = 5
+innodb_io_capacity = 400                        #根据您的服务器IOPS能力适当调整innodb_io_capacity，配SSD盘可调整到 10000 - 20000
+innodb_io_capacity_max = 20000
+innodb_flush_method = O_DIRECT
+innodb_log_file_size = 1G
+innodb_log_files_in_group = 2
+innodb_thread_concurrency = 64
+innodb_strict_mode = OFF
+innodb_sort_buffer_size = 4194304
+#****************** undolog设置 ******************
+innodb_undo_directory = ${MYSQL_UNDODIR}         #undolog空间的目录位置
+innodb_max_undo_log_size = 1G                    #当超过这个阀值（默认是1G），会触发truncate回收（收缩）动作，truncate后空间缩小到10M。
+innodb_purge_rseg_truncate_frequency = 128       #控制回收（收缩）undolog的频率
+innodb_undo_log_truncate = 1                     #即开启在线回收undolog日志文件
+######################### log 设置 #####################
+log_error = ${MYSQL_DATADIR}/error.log
+slow_query_log = 1
+long_query_time = 10
+slow_query_log_file = ${MYSQL_DATADIR}/slow.log
+#=======================================================================
+# MySQL mysqldump配置
+#=======================================================================
+[mysqldump]
+quick
+max_allowed_packet = 128M
+#=======================================================================
+# MySQL mysqld_safe配置
+#=======================================================================
+[mysqld_safe]
+log_error = ${MYSQL_DATADIR}/error.log
+pid_file = ${MYSQL_DATADIR}/mysqldb.pid

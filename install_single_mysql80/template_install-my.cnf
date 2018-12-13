@@ -1,0 +1,135 @@
+# line          :V1.9
+# mail          :gczheng@139.com
+# data          :2018-07-19
+# file_name     :my.cnf
+# update        :
+
+#### 注意     :建议参数根据实际情况作调整
+#### 本配置文件主要适用于MySQL 5.7.18版本
+
+# ********* 以下重要参数必须修改核对 *********
+# 1.innodb_flush_log_at_trx_commit=1
+# 2.sync_binlog = 1
+# 3.innodb_strict_mode = OFF                          #关闭InnoDB严格检查模式
+# 4.innodb_flush_method = O_DIRECT
+# 5.lower_case_table_names = 1                        #设置区分大小写,1表示不区分大小写，0表示区分大小写
+# 6.character-set-server = utf8
+# 7.sql_mode                                          #默认配置
+# 8.server-id =1                                      #修改成对应数值（1~4294967295），建议使用使用ip的最后两个网段组合（192.168.100.199，设置成100199）
+# 9.innodb_buffer_pool_size = 10G                     #纯mysql server 配置50%和 混合内存配置不低于10G~40%
+#10.key_buffer_size=1G                                #如果有myisam表请配置为1G，没有请配置64M
+#11.innodb_data_file_path = ibdata1:1G:autoextend     #确认配置是否跟原来一样,之前已配置好请维持原样,如未配置请注释掉，新版本请取消注释
+#12.log_bin = /data/mysqldata/binlog                  #旧版本或者之前已配置好如：log_bin =/r2/data/mysqldata/slave-bin，请维持原样
+#13.slave-parallel                                    #从库开启并行复制，并行复制参数取消注释
+#14.undolog                                           #确认配置是否跟原来一样,之前已配置好请维持原样,如未配置请注释掉，新版本（包括升级版本）请取消注释并创建目录并授权
+# ********************************************
+
+[client]
+port    = 3306
+socket  = /data/mysqldata/mysql.sock
+#=======================================================================
+# # MySQL客户端配置
+#=======================================================================
+[mysql]
+prompt="(\u@\h) \\R:\\m:\\s [\d]> "
+no-auto-rehash
+default-character-set = utf8mb4
+#=======================================================================
+# MySQL服务器全局配置
+#=======================================================================
+[mysqld]
+user = mysql
+port = 3306
+server-id = 49180
+tmpdir = /data/mysqldata
+datadir = /data/mysqldata
+socket  = /data/mysqldata/mysql.sock
+wait_timeout = 31536000
+#interactive_timeout = 600
+#sql_mode =                             #sql_mode 配置为空值
+#skip_name_resolve = 1
+lower_case_table_names = 1
+character-set-server = utf8mb4
+log_timestamps = SYSTEM
+init_connect='SET NAMES utf8mb4'
+max_allowed_packet = 128M
+######################### 性能参数 ####################
+open_files_limit = 10240
+max_connections = 1000
+max_user_connections=999
+max_connect_errors = 100000
+table_open_cache = 1024
+thread_cache_size = 64
+max_heap_table_size = 32M
+query_cache_type = 0
+###global cache ###
+key_buffer_size = 1G
+query_cache_size = 0
+tmp_table_size = 32M        #内存临时表
+binlog_cache_size = 4M      #二进制日志缓冲
+###session cache ###
+sort_buffer_size = 8M       #排序缓冲
+join_buffer_size = 4M       #表连接缓冲
+read_buffer_size = 8M       #顺序读缓冲
+read_rnd_buffer_size = 8M   #随机读缓冲
+thread_stack = 256KB        #线程的堆栈的大小
+######################### binlog设置 #####################
+binlog_format = ROW
+log_bin = /data/mysqldata/binlog
+max_binlog_size = 1G
+expire_logs_days = 15       #binlog比较占空间，注意磁盘空间
+sync_binlog = 1             #重要参数必须修改为1
+######################### 复制设置 ########################
+log_slave_updates = 1
+#replicate-do-db = test
+#binlog-ignore-db = mysql
+### GTID 配置 ###
+gtid_mode=ON
+enforce-gtid-consistency=true
+#****************** 开启并行复制（从库）******************
+slave-parallel-type=LOGICAL_CLOCK     #基于组提交的并行复制方式
+slave-parallel-workers= 8             #并行的SQL线程数量（cpu核数）
+master-info_repository=TABLE          #master信息以表的形式保存
+relay_log_info_repository=TABLE       #slave信息以表的形式保存
+relay_log_recovery=ON                 #relay_log自我修复
+######################### innodb ##########################
+default_storage_engine = InnoDB
+innodb_data_file_path = ibdata1:1G:autoextend
+innodb_buffer_pool_size = 1G          #系统内存50%
+innodb_open_files = 5120              #调整innodb_open_files设置值，必须小于open_files_limit的设置值
+innodb_flush_log_at_trx_commit = 1    #线上服务器必须配置为1
+innodb_file_per_table = 1
+innodb_lock_wait_timeout = 5
+innodb_io_capacity = 400              #根据您的服务器IOPS能力适当调整innodb_io_capacity，配SSD盘可调整到 10000 - 20000
+innodb_io_capacity_max = 20000
+innodb_flush_method = O_DIRECT
+innodb_log_file_size = 1G
+innodb_log_files_in_group = 2
+innodb_large_prefix = 0
+innodb_thread_concurrency = 64
+innodb_strict_mode = OFF
+innodb_sort_buffer_size = 4194304
+#****************** undolog设置 ******************
+innodb_undo_directory = /data/undolog            #undolog空间的目录位置
+innodb_undo_tablespaces = 2                      #undolog日志文件个数，mysql8之后将弃用
+innodb_undo_logs = 128                           #回滚段的数量， 至少大于等于35，默认128。
+innodb_max_undo_log_size = 1G                    #当超过这个阀值（默认是1G），会触发truncate回收（收缩）动作，truncate后空间缩小到10M。
+innodb_purge_rseg_truncate_frequency = 128       #控制回收（收缩）undolog的频率
+innodb_undo_log_truncate = 1                     #即开启在线回收undolog日志文件
+######################### log 设置 #####################
+log_error = /data/mysqldata/error.log
+slow_query_log = 1
+long_query_time = 10
+slow_query_log_file = /data/mysqldata/slow.log
+#=======================================================================
+# MySQL mysqldump配置
+#=======================================================================
+[mysqldump]
+quick
+max_allowed_packet = 128M
+#=======================================================================
+# MySQL mysqld_safe配置
+#=======================================================================
+[mysqld_safe]
+log_error = /data/mysqldata/error.log
+pid_file = /data/mysqldata/mysqldb.pid
